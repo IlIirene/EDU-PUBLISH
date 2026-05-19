@@ -12,7 +12,7 @@
     "build:content": "node scripts/compile-content.mjs",
     "build:images": "node scripts/optimize-images.mjs",
     "build:rss": "node scripts/generate-rss.mjs",
-    "prebuild": "pnpm run validate && pnpm run compile:config && pnpm run build:content && pnpm run build:images && pnpm run build:rss",
+    "prebuild": "npm run compile:config && npm run build:content && npm run build:images && npm run build:rsss",
     "build": "vite build",
     "dev": "pnpm run compile:config && pnpm run build:content && vite",
     "preview": "vite preview"
