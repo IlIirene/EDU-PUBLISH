@@ -35,10 +35,14 @@ const DailySummaryPanel: React.FC<{
   selectedSchoolSlug: string | null;
   conclusionBySchool: Record<string, ConclusionItem>;
   schoolNameBySlug?: Record<string, string>;
-}> = React.memo(({ selectedDate, selectedSchoolSlug, conclusionBySchool, schoolNameBySlug = {} }) => {
+  selectedFeedId?: string | null;
+}> = React.memo(({ selectedDate, selectedSchoolSlug, conclusionBySchool, schoolNameBySlug = {}, selectedFeedId }) => {
   const [isTypingSummary, setIsTypingSummary] = React.useState(false);
   const [dailySummaryText, setDailySummaryText] = React.useState('');
   const [summaryNotFound, setSummaryNotFound] = React.useState(false);
+  const [aiEnhancedText, setAiEnhancedText] = React.useState('');
+  const [isAiLoading, setIsAiLoading] = React.useState(false);
+  const [aiSource, setAiSource] = React.useState<'llm' | 'conclusion' | 'empty' | null>(null);
   const typingTimerRef = React.useRef<number | null>(null);
   const indexRef = React.useRef(0);
 
@@ -60,6 +64,8 @@ const DailySummaryPanel: React.FC<{
     setDailySummaryText('');
     setSummaryNotFound(false);
     setIsTypingSummary(false);
+    setAiEnhancedText('');
+    setAiSource(null);
 
     if (!selectedDate || !selectedSchoolSlug) return;
 
@@ -116,18 +122,80 @@ const DailySummaryPanel: React.FC<{
     }, 45);
   }, [conclusionBySchool, schoolNameBySlug, selectedDate, selectedSchoolSlug]);
 
+  // Auto-fetch AI-enhanced summary
+  React.useEffect(() => {
+    if (!selectedDate || !selectedSchoolSlug) return;
+    const dateKey = toDateKey(selectedDate);
+
+    let cancelled = false;
+    setIsAiLoading(true);
+
+    fetch('/api/ai-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: dateKey, schoolSlug: selectedSchoolSlug }),
+    })
+      .then(res => res.json())
+      .then((data: { ok: boolean; summary?: string; source?: string }) => {
+        if (cancelled) return;
+        setIsAiLoading(false);
+        if (data.ok && data.summary) {
+          setAiSource((data.source as 'llm' | 'conclusion' | 'empty') || 'conclusion');
+          if (data.source === 'llm') {
+            setAiEnhancedText(data.summary);
+          }
+        } else {
+          setAiSource('empty');
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setIsAiLoading(false);
+        setAiSource(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [selectedDate, selectedSchoolSlug]);
+
   const bodyContent = (() => {
-    if (dailySummaryText) {
+    const displayText = aiEnhancedText || dailySummaryText;
+    if (displayText) {
       return (
         <ScrollArea className="h-[320px]">
           <div className="p-3 pr-4 text-xs leading-relaxed whitespace-pre-wrap text-foreground/90">
-            {dailySummaryText}
-            {isTypingSummary && <span className="ml-1 inline-block w-2 animate-pulse">|</span>}
+            {isAiLoading && !dailySummaryText && (
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px] text-primary font-semibold">AI 增强中...</span>
+              </div>
+            )}
+            {aiEnhancedText ? (
+              <>
+                {aiEnhancedText}
+                <div className="mt-3 pt-2 border-t border-border/40">
+                  <span className="inline-flex items-center gap-1 text-[9px] text-primary/70 font-semibold">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    AI 增强总结
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                {dailySummaryText}
+                {isTypingSummary && <span className="ml-1 inline-block w-2 animate-pulse">|</span>}
+                {isAiLoading && (
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <div className="w-2.5 h-2.5 border-1.5 border-primary border-t-transparent rounded-full animate-spin" />
+                    AI 增强生成中...
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </ScrollArea>
       );
     }
-    if (isTypingSummary) {
+    if (isTypingSummary || isAiLoading) {
       return (
         <div className="p-3 flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -332,6 +400,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = React.memo(({
                 selectedSchoolSlug={selectedSchoolSlug}
                 conclusionBySchool={conclusionBySchool}
                 schoolNameBySlug={schoolNameBySlug}
+                selectedFeedId={selectedFeedId}
               />
             )}
           </div>

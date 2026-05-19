@@ -15,6 +15,7 @@ import { useArticleNavigation } from './hooks/use-article-navigation';
 import { useViewCounts } from './hooks/use-view-counts';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWidgetConfig } from './hooks/use-widget-config';
+import { getTimeWindowState } from './lib/time-window';
 import { WidgetArea } from './components/widgets/WidgetArea';
 import { WidgetDrawer } from './components/widgets/WidgetDrawer';
 import { WidgetConfigPanel } from './components/widgets/WidgetConfigPanel';
@@ -152,7 +153,7 @@ const AppShell: React.FC<{
     localStorage.setItem('desktop-view-mode', desktopViewMode);
   }, [desktopViewMode]);
 
-  const { readArticleIdsRef, markArticleRead } = useReadArticles();
+  const { readArticleIdsRef, markArticleRead, markArticleUnread } = useReadArticles();
 
   const {
     schoolFeedEntries, schoolShortNameMap, schoolNameBySlug,
@@ -292,6 +293,15 @@ const AppShell: React.FC<{
       <LeftSidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
+        compactExpiringArticles={React.useMemo(() => {
+          const now = Date.now();
+          return (selectedFeed?.items ?? [])
+            .filter(a => a.startAt && a.endAt)
+            .map(a => ({ article: a, ...getTimeWindowState(a.startAt, a.endAt, now) }))
+            .filter(item => item.state === 'active')
+            .sort((a, b) => b.progress - a.progress)
+            .slice(0, 3);
+        }, [selectedFeed])}
         handleBackToDashboard={() => navigate('/dashboard')}
         errorMsg={null}
         groupedFeeds={groupedFeeds}
@@ -366,6 +376,11 @@ const AppShell: React.FC<{
                 onResetFilters={resetFilters}
                 paginatedArticlesWithCategory={paginatedArticles}
                 readArticleIds={readArticleIdsRef.current}
+                markArticleUnread={markArticleUnread}
+                timedOnly={timedOnly}
+                onTimedOnlyChange={(v) => updateFilter(setTimedOnly, v)}
+                hideExpired={hideExpired}
+                onHideExpiredChange={(v) => updateFilter(setHideExpired, v)}
                 handleArticleSelect={handleArticleSelect}
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
@@ -483,6 +498,14 @@ const AppShell: React.FC<{
 
       <NoticeDetailModal
         article={activeArticle}
+        isRead={activeArticle ? readArticleIdsRef.current.has(activeArticle.guid) : false}
+        onToggleRead={(guid) => {
+          if (readArticleIdsRef.current.has(guid)) {
+            markArticleUnread(guid);
+          } else {
+            markArticleRead(guid);
+          }
+        }}
         feedLogo={activeArticle?.subscriptionId ? feedAvatarCache[activeArticle.subscriptionId] || feedAvatarCache[`school-${activeArticle.schoolSlug}-all`] : activeArticle?.schoolSlug ? feedAvatarCache[`school-${activeArticle.schoolSlug}-all`] : undefined}
         onClose={handleModalClose}
         onPrev={handlePrev}

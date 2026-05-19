@@ -14,6 +14,8 @@ import {
   FileVideo,
   Share2,
   X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Article } from '../types';
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,8 @@ import { renderSimpleMarkdown } from '../lib/simple-markdown';
 
 interface NoticeDetailModalProps {
   article: Article | null;
+  isRead?: boolean;
+  onToggleRead?: (guid: string) => void;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -38,6 +42,8 @@ interface NoticeDetailModalProps {
 
 export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
   article,
+  isRead = false,
+  onToggleRead,
   onClose,
   onPrev,
   onNext,
@@ -297,17 +303,26 @@ export const NoticeDetailModal: React.FC<NoticeDetailModalProps> = React.memo(({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="h-8 w-8 md:h-10 md:w-10"
-                  aria-label="关闭详情"
-                  title="关闭详情"
-                >
-                  <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                </Button>
+              <div className="flex items-center gap-2 md:gap-3">
+                {onToggleRead && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onToggleRead(article.guid)}
+                    className={cn(
+                      "gap-1 h-7 md:h-8 px-2 text-[10px] md:text-xs font-semibold",
+                      isRead
+                        ? "text-muted-foreground hover:text-foreground"
+                        : "text-red-600 hover:text-red-700 dark:text-red-400"
+                    )}
+                    title={isRead ? '标为未读' : '标为已读'}
+                  >
+                    {isRead ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    {isRead ? '已读' : '未读'}
+                  </Button>
+                )}
+                {navButtons}
+                {actionButtons}
               </div>
             </header>
 

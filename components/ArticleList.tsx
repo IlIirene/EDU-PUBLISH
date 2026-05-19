@@ -78,6 +78,11 @@ interface ArticleListProps {
   onOpenMobileWidgets?: () => void;
   leftWidgetsNode?: React.ReactNode;
   rightWidgetsNode?: React.ReactNode;
+  timedOnly?: boolean;
+  onTimedOnlyChange?: (value: boolean) => void;
+  hideExpired?: boolean;
+  onHideExpiredChange?: (value: boolean) => void;
+  markArticleUnread?: (guid: string) => void;
 }
 
 const ArticleListComponent: React.FC<ArticleListProps> = ({
@@ -122,6 +127,11 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
   onOpenMobileWidgets,
   leftWidgetsNode,
   rightWidgetsNode,
+  timedOnly = false,
+  onTimedOnlyChange,
+  hideExpired = false,
+  onHideExpiredChange,
+  markArticleUnread,
 }) => {
   const [isPulling, setIsPulling] = React.useState(false);
   const [isPullReady, setIsPullReady] = React.useState(false);
@@ -403,6 +413,25 @@ const ArticleListComponent: React.FC<ArticleListProps> = ({
               <List className="w-3.5 h-3.5" />
             </Button>
           </div>
+          {/* Desktop view mode toggle */}
+          {onTimedOnlyChange && (
+            <Button
+              variant={timedOnly ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onTimedOnlyChange(!timedOnly)}
+              className={cn(
+                "h-8 px-2.5 gap-1 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                timedOnly
+                  ? "bg-amber-500 text-white hover:bg-amber-600"
+                  : "text-muted-foreground hover:text-amber-600"
+              )}
+              title="仅查看限时活动"
+              aria-label="仅查看限时活动"
+            >
+              <Clock3 className="w-3 h-3" />
+              限时
+            </Button>
+          )}
           {/* Desktop view mode toggle */}
           <div className="hidden md:flex items-center rounded-full border bg-background p-0.5">
             <Button

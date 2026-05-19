@@ -9,12 +9,14 @@ import {
   Folder,
   Sun,
   Moon,
-  RefreshCw
+  RefreshCw,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PaletteSwitcher } from './PaletteSwitcher';
 import { widgetsConfig } from '../lib/widgets-config';
+import { getTimeWindowState } from '../lib/time-window';
 import { FeedItem } from './FeedItem';
 import { Feed, FeedMeta } from '../types';
 import { CategoryNode } from '../hooks/use-feed-data';
@@ -333,6 +335,7 @@ interface LeftSidebarProps {
   loading: boolean;
   generatedAt: string;
   updatedCount: number;
+  compactExpiringArticles?: Array<{ article: Feed['items'][number]; progress: number }>;
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -350,6 +353,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   loading,
   generatedAt,
   updatedCount,
+  compactExpiringArticles = [],
 }) => {
   const scrollAreaHostRef = React.useRef<HTMLDivElement | null>(null);
   const [nowTs, setNowTs] = React.useState(() => Date.now());
@@ -566,6 +570,36 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             )}
             {loading && <div className="flex justify-center p-8"><RefreshCw className="h-6 w-6 text-primary animate-spin" /></div>}
           </div>
+
+          {/* 即将过期模块 */}
+          {compactExpiringArticles.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-1.5 mb-2 px-1">
+                <Zap className="h-3 w-3 text-amber-500" />
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">即将过期</span>
+              </div>
+              <div className="space-y-2">
+                {compactExpiringArticles.map(({ article, progress }) => (
+                  <div key={article.guid} className="space-y-1 px-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="text-[10px] font-medium text-foreground truncate flex-1 leading-tight" title={article.title}>
+                        {article.title}
+                      </span>
+                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 shrink-0">
+                        {Math.round(progress)}%
+                      </span>
+                    </div>
+                    <div className="relative w-full h-1.5 rounded-full bg-muted overflow-hidden border border-border/30">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 to-red-500 transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </ScrollArea>
         </div>
 

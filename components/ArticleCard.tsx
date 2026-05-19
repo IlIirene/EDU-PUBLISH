@@ -307,9 +307,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = React.memo(({
               ))}
           </div>
 
-          {!isRead && (
-            <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
-          )}
+          {/* Read status badge - top right corner */}
+          <div className={cn(
+            "absolute top-2 right-2 z-30 px-2 py-0.5 rounded text-[10px] font-bold border shadow-sm",
+            isRead
+              ? "bg-muted/60 text-muted-foreground border-border/40"
+              : "bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800 animate-pulse"
+          )}>
+            {isRead ? '已读' : '未读'}
+          </div>
 
           <CardHeader className={cn("space-y-1", isCompactNoCover ? "px-3 pt-2 pb-1" : "p-4 pb-2")}>
             <h3
